@@ -23,9 +23,9 @@ class _HabitCardState extends State<HabitCard> {
   // Size constants
   static const double cardHeight = 100; // Card height
   static const double gifHeight = 100; // GIF height
-  static const double habitNameFontSize = 30; // Habit name font size
-  static const double goalProgressFontSize = 16; // Goal and progress font size
-  static const double completedTimeFontSize = 16; // Completed time font size
+  static const double habitNameFontSize = 20; // Habit name font size
+  static const double goalProgressFontSize = 14; // Goal and progress font size
+  static const double completedTimeFontSize = 14; // Completed time font size
   static const EdgeInsets buttonPadding =
       EdgeInsets.symmetric(vertical: 10); // Button padding
 
@@ -119,19 +119,28 @@ class _HabitCardState extends State<HabitCard> {
           children: [
             // Conditionally display habit GIF if URL is provided
             if (widget.habit.gifUrl.isNotEmpty) ...[
-              Image.network(
-                widget.habit.gifUrl,
-                height: gifHeight, // Set a fixed height for the GIF
-                fit: BoxFit.cover,
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(
+                          8.0)), // Optional: to round top corners
+                  child: Image.network(
+                    widget.habit.gifUrl,
+                    fit: BoxFit.cover, // Make the GIF fill the card
+                    width: double.infinity, // Fill the width of the card
+                  ),
+                ),
               ),
-              SizedBox(height: 8),
             ],
             // Display habit name
-            Text(
-              widget.habit.name,
-              style: TextStyle(
-                  fontSize: habitNameFontSize, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                widget.habit.name,
+                style: TextStyle(
+                    fontSize: habitNameFontSize, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
             ),
             SizedBox(height: 8),
             // Display habit goal in formatted time
@@ -169,6 +178,16 @@ class _HabitCardState extends State<HabitCard> {
               onPressed: _isTimerRunning && !_isPaused
                   ? _pauseTimer // Show pause if the timer is running
                   : _startTimer, // Start or resume the timer
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    Theme.of(context).primaryColor, // Match primary color
+                foregroundColor: Colors.white, // Text color
+                padding: EdgeInsets.symmetric(
+                    horizontal: 32, vertical: 16), // Padding
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12), // Rounded corners
+                ),
+              ),
               child: Padding(
                 padding: buttonPadding,
                 child: Text(_isPaused
