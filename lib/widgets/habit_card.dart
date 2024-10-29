@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 class HabitCard extends StatefulWidget {
   final Habit habit;
 
-  HabitCard({required this.habit});
+  const HabitCard({Key? key, required this.habit}) : super(key: key);
 
   @override
   _HabitCardState createState() => _HabitCardState();
@@ -83,6 +83,47 @@ class _HabitCardState extends State<HabitCard> {
       _remainingTime = 0; // Reset remaining time
       _completedTime = 0; // Reset completed time
     });
+  }
+
+  // Show confirmation dialog before deleting the habit
+  void _showDeleteConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Confirm Deletion'),
+          content:
+              Text('Are you sure you want to delete "${widget.habit.name}"?'),
+          actions: [
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog without action
+              },
+            ),
+            TextButton(
+              child: Text('Delete'),
+              onPressed: () {
+                _deleteHabit(); // Call the delete method
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Method to delete the habit
+  void _deleteHabit() {
+    final habitProvider = Provider.of<HabitProvider>(context, listen: false);
+    habitProvider.removeHabit(widget.habit); // Remove the habit
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${widget.habit.name} deleted.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   // Helper method to format time conditionally
@@ -176,8 +217,8 @@ class _HabitCardState extends State<HabitCard> {
             // Start, Pause, or Resume button
             ElevatedButton(
               onPressed: _isTimerRunning && !_isPaused
-                  ? _pauseTimer // Show pause if the timer is running
-                  : _startTimer, // Start or resume the timer
+                  ? _pauseTimer
+                  : _startTimer, // Show pause if the timer is running
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                     Theme.of(context).primaryColor, // Match primary color
@@ -191,10 +232,30 @@ class _HabitCardState extends State<HabitCard> {
               child: Padding(
                 padding: buttonPadding,
                 child: Text(_isPaused
-                    ? 'Resume' // Show 'Resume' when paused
+                    ? 'Resume'
                     : (_isTimerRunning
                         ? 'Pause'
-                        : 'Start Habit')), // Show 'Start Habit' or 'Pause'
+                        : 'Start Habit')), // Show appropriate button text
+              ),
+            ),
+            SizedBox(height: 8),
+            // Delete button
+            ElevatedButton(
+              onPressed:
+                  _showDeleteConfirmation, // Show confirmation dialog before deleting
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(
+                    71, 255, 0, 0), // Red color for delete button
+                foregroundColor: Colors.white, // Text color
+                padding: EdgeInsets.symmetric(
+                    horizontal: 32, vertical: 16), // Padding
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12), // Rounded corners
+                ),
+              ),
+              child: Padding(
+                padding: buttonPadding,
+                child: Text('Delete Habit'), // Delete button text
               ),
             ),
           ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/habit_provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/Welcome_Screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -28,7 +29,12 @@ class MyApp extends StatelessWidget {
                 TextStyle(color: Colors.black, fontSize: 14), // Smaller text
           ),
         ),
-        home: HomeScreen(),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => WelcomeScreen(),
+          '/home': (context) =>
+              HomeScreen(), // Replace with your Home Screen widget
+        },
       ),
     );
   }
