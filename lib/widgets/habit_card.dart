@@ -21,9 +21,9 @@ class _HabitCardState extends State<HabitCard> {
   bool _isPaused = false; // Pause state
 
   // Size constants
-  static const double cardHeight = 50; // Card height
-  static const double gifHeight = 600; // GIF height
-  static const double habitNameFontSize = 22; // Habit name font size
+  static const double cardHeight = 100; // Card height
+  static const double gifHeight = 100; // GIF height
+  static const double habitNameFontSize = 30; // Habit name font size
   static const double goalProgressFontSize = 16; // Goal and progress font size
   static const double completedTimeFontSize = 16; // Completed time font size
   static const EdgeInsets buttonPadding =
