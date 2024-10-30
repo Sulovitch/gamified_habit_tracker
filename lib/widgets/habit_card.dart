@@ -20,15 +20,6 @@ class _HabitCardState extends State<HabitCard> {
   bool _isTimerRunning = false; // Timer state
   bool _isPaused = false; // Pause state
 
-  // Size constants
-  static const double cardHeight = 100; // Card height
-  static const double gifHeight = 100; // GIF height
-  static const double habitNameFontSize = 20; // Habit name font size
-  static const double goalProgressFontSize = 14; // Goal and progress font size
-  static const double completedTimeFontSize = 14; // Completed time font size
-  static const EdgeInsets buttonPadding =
-      EdgeInsets.symmetric(vertical: 10); // Button padding
-
   @override
   void dispose() {
     _timer?.cancel(); // Cancel timer if the widget is disposed
@@ -149,12 +140,23 @@ class _HabitCardState extends State<HabitCard> {
 
   @override
   Widget build(BuildContext context) {
+    // Get the screen size
+    final screenSize = MediaQuery.of(context).size;
+
+    // Set responsive sizes
+    final cardHeight = screenSize.height * 0.25; // 25% of screen height
+    final habitNameFontSize = screenSize.width * 0.05; // 5% of screen width
+    final goalProgressFontSize = screenSize.width * 0.04; // 4% of screen width
+    final completedTimeFontSize = screenSize.width * 0.04; // 4% of screen width
+    final buttonPadding = EdgeInsets.symmetric(
+        vertical: screenSize.height * 0.02); // 2% of screen height
+
     double progress = _completedTime / widget.habit.goal; // Calculate progress
 
     return Card(
       elevation: 5,
       child: SizedBox(
-        height: cardHeight, // Use the cardHeight variable
+        height: cardHeight, // Use the calculated cardHeight
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -255,7 +257,7 @@ class _HabitCardState extends State<HabitCard> {
               ),
               child: Padding(
                 padding: buttonPadding,
-                child: Text('Delete Habit'), // Delete button text
+                child: const Text('Delete Habit'),
               ),
             ),
           ],
