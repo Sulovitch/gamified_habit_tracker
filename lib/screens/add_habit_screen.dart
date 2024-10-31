@@ -10,16 +10,25 @@ class AddHabitScreen extends StatefulWidget {
 
 class _AddHabitScreenState extends State<AddHabitScreen> {
   final _nameController = TextEditingController();
-  final _categoryController = TextEditingController();
   final _hoursController = TextEditingController();
   final _minutesController = TextEditingController();
   final _secondsController = TextEditingController();
   String _selectedGifUrl = '';
+  String? _selectedCategory;
+
+  // List of categories
+  final List<String> _categories = [
+    'Health',
+    'Fitness',
+    'Education',
+    'Work',
+    'Personal Development',
+    'Others',
+  ];
 
   @override
   void dispose() {
     _nameController.dispose();
-    _categoryController.dispose();
     _hoursController.dispose();
     _minutesController.dispose();
     _secondsController.dispose();
@@ -42,7 +51,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
             children: [
               _buildTextField(_nameController, 'Habit Name'),
               SizedBox(height: 16),
-              _buildTextField(_categoryController, 'Category'),
+              _buildCategoryDropdown(),
               SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -94,7 +103,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   final habitProvider =
                       Provider.of<HabitProvider>(context, listen: false);
                   final name = _nameController.text;
-                  final category = _categoryController.text;
+                  final category = _selectedCategory ?? '';
 
                   // Parse the time from the input fields
                   int hours = int.tryParse(_hoursController.text) ?? 0;
@@ -143,6 +152,30 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           contentPadding:
               EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryDropdown() {
+    return Container(
+      width: 300,
+      child: DropdownButtonFormField<String>(
+        value: _selectedCategory,
+        decoration: InputDecoration(
+          labelText: 'Category',
+          border: OutlineInputBorder(),
+        ),
+        items: _categories.map((String category) {
+          return DropdownMenuItem<String>(
+            value: category,
+            child: Text(category),
+          );
+        }).toList(),
+        onChanged: (String? newValue) {
+          setState(() {
+            _selectedCategory = newValue;
+          });
+        },
       ),
     );
   }

@@ -19,15 +19,6 @@ class MyApp extends StatelessWidget {
           primaryColor: Colors.teal,
           colorScheme:
               ColorScheme.light(primary: Colors.teal, secondary: Colors.amber),
-          textTheme: TextTheme(
-            // Use deprecated styles for broader compatibility
-            titleLarge:
-                TextStyle(color: Colors.black, fontSize: 20), // For headings
-            bodyLarge:
-                TextStyle(color: Colors.black, fontSize: 16), // General text
-            bodyMedium:
-                TextStyle(color: Colors.black, fontSize: 14), // Smaller text
-          ),
         ),
         initialRoute: '/',
         routes: {

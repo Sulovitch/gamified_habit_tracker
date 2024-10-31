@@ -14,69 +14,88 @@ class HabitCard extends StatefulWidget {
 }
 
 class _HabitCardState extends State<HabitCard> {
-  Timer? _timer; // Timer for countdown
-  int _remainingTime = 0; // Remaining time in seconds
-  int _completedTime = 0; // Completed time in seconds
-  bool _isTimerRunning = false; // Timer state
-  bool _isPaused = false; // Pause state
+  Timer? _timer;
+  int _remainingTime = 0;
+  int _completedTime = 0;
+  bool _isTimerRunning = false;
+  bool _isPaused = false;
 
   @override
   void dispose() {
-    _timer?.cancel(); // Cancel timer if the widget is disposed
+    _timer?.cancel();
     super.dispose();
   }
 
-  // Start or resume the timer
   void _startTimer() {
     if (!_isTimerRunning) {
       setState(() {
-        _remainingTime = widget.habit.goal; // Set goal time in seconds
+        _remainingTime = widget.habit.goal; // Set remaining time to goal time
         _completedTime = 0; // Reset completed time
       });
     }
 
     setState(() {
       _isTimerRunning = true;
-      _isPaused = false; // Timer is no longer paused
+      _isPaused = false;
     });
 
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (_remainingTime > 0 && !_isPaused) {
         setState(() {
-          _remainingTime--; // Decrease remaining time
-          _completedTime++; // Increase completed time
+          _remainingTime--;
+          _completedTime++;
         });
       } else if (_remainingTime == 0) {
-        _timer?.cancel(); // Stop timer when it reaches zero
-        _completeHabit();
+        _timer?.cancel();
+        _completeHabit(); // Automatically complete the habit when time is up
       }
     });
   }
 
   void _pauseTimer() {
     setState(() {
-      _isPaused = true; // Pause the timer
+      _isPaused = true;
     });
-    _timer?.cancel(); // Cancel the periodic timer while paused
+    _timer?.cancel();
   }
 
   void _completeHabit() {
+    if (widget.habit.isCompleted) return; // Prevent completing again
+
     final habitProvider = Provider.of<HabitProvider>(context, listen: false);
-    habitProvider.completeHabit(widget.habit, widget.habit.goal);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Great job! You earned 10 points!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    habitProvider.completeHabit(widget.habit, _completedTime);
+
+    if (widget.habit.points > 0) {
+      // Rewarding points
+      habitProvider.updateAnalytics();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Great job! You earned ${widget.habit.points} points!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+
+    // Update local state to reflect completion
     setState(() {
-      _isTimerRunning = false; // Reset timer state
-      _remainingTime = 0; // Reset remaining time
-      _completedTime = 0; // Reset completed time
+      _isTimerRunning = false;
+      _remainingTime = 0;
+      _completedTime = 0;
     });
   }
 
-  // Show confirmation dialog before deleting the habit
+  void _uncompleteHabit() {
+    final habitProvider = Provider.of<HabitProvider>(context, listen: false);
+    habitProvider
+        .uncompleteHabit(widget.habit); // Define this method in HabitProvider
+
+    setState(() {
+      _completedTime = 0; // Reset progress
+      _remainingTime = widget.habit.goal; // Reset timer
+      _isTimerRunning = false; // Stop the timer
+    });
+  }
+
   void _showDeleteConfirmation() {
     showDialog(
       context: context,
@@ -89,14 +108,14 @@ class _HabitCardState extends State<HabitCard> {
             TextButton(
               child: Text('Cancel'),
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog without action
+                Navigator.of(context).pop();
               },
             ),
             TextButton(
               child: Text('Delete'),
               onPressed: () {
-                _deleteHabit(); // Call the delete method
-                Navigator.of(context).pop(); // Close the dialog
+                _deleteHabit();
+                Navigator.of(context).pop();
               },
             ),
           ],
@@ -105,10 +124,9 @@ class _HabitCardState extends State<HabitCard> {
     );
   }
 
-  // Method to delete the habit
   void _deleteHabit() {
     final habitProvider = Provider.of<HabitProvider>(context, listen: false);
-    habitProvider.removeHabit(widget.habit); // Remove the habit
+    habitProvider.removeHabit(widget.habit);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${widget.habit.name} deleted.'),
@@ -117,7 +135,6 @@ class _HabitCardState extends State<HabitCard> {
     );
   }
 
-  // Helper method to format time conditionally
   String _formatTime(int totalSeconds) {
     int hours = totalSeconds ~/ 3600;
     int minutes = (totalSeconds % 3600) ~/ 60;
@@ -126,13 +143,13 @@ class _HabitCardState extends State<HabitCard> {
     List<String> timeParts = [];
 
     if (hours > 0) {
-      timeParts.add('$hours hours');
+      timeParts.add('$hours h');
     }
     if (minutes > 0 || hours > 0) {
-      timeParts.add('$minutes minutes');
+      timeParts.add('$minutes m');
     }
     if (seconds > 0 || (hours == 0 && minutes == 0)) {
-      timeParts.add('$seconds seconds');
+      timeParts.add('$seconds s');
     }
 
     return timeParts.join(' ');
@@ -140,124 +157,118 @@ class _HabitCardState extends State<HabitCard> {
 
   @override
   Widget build(BuildContext context) {
-    // Get the screen size
-    final screenSize = MediaQuery.of(context).size;
-
-    // Set responsive sizes
-    final cardHeight = screenSize.height * 0.25; // 25% of screen height
-    final habitNameFontSize = screenSize.width * 0.05; // 5% of screen width
-    final goalProgressFontSize = screenSize.width * 0.04; // 4% of screen width
-    final completedTimeFontSize = screenSize.width * 0.04; // 4% of screen width
-    final buttonPadding = EdgeInsets.symmetric(
-        vertical: screenSize.height * 0.02); // 2% of screen height
-
-    double progress = _completedTime / widget.habit.goal; // Calculate progress
-
-    return Card(
-      elevation: 5,
-      child: SizedBox(
-        height: cardHeight, // Use the calculated cardHeight
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Card(
+        elevation: 5,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
           children: [
-            // Conditionally display habit GIF if URL is provided
-            if (widget.habit.gifUrl.isNotEmpty) ...[
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(
-                          8.0)), // Optional: to round top corners
-                  child: Image.network(
-                    widget.habit.gifUrl,
-                    fit: BoxFit.cover, // Make the GIF fill the card
-                    width: double.infinity, // Fill the width of the card
+            if (widget.habit.gifUrl.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      widget.habit.gifUrl,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
-            ],
-            // Display habit name
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                widget.habit.name,
-                style: TextStyle(
-                    fontSize: habitNameFontSize, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            SizedBox(height: 8),
-            // Display habit goal in formatted time
-            Text(
-              'Goal: ${_formatTime(widget.habit.goal)}',
-              style: TextStyle(fontSize: goalProgressFontSize),
-            ),
-            SizedBox(height: 8),
-            // Display habit progress in formatted time
-            Text(
-              'Progress: ${_formatTime(_completedTime)}',
-              style: TextStyle(fontSize: goalProgressFontSize),
-            ),
-            SizedBox(height: 8),
-            // Completed time label
-            if (_isTimerRunning) ...[
-              Text(
-                'Completed: ${_formatTime(_completedTime)}',
-                style: TextStyle(
-                    fontSize: completedTimeFontSize,
-                    fontWeight: FontWeight.bold),
-              ),
-            ],
-            SizedBox(height: 8),
-            // Linear Progress Indicator
-            LinearProgressIndicator(
-              value: progress, // Set the progress
-              minHeight: 8, // Height of the progress bar
-              backgroundColor: Colors.grey[300], // Background color
-              color: const Color.fromARGB(72, 9, 255, 0), // Progress color
-            ),
-            SizedBox(height: 8),
-            // Start, Pause, or Resume button
-            ElevatedButton(
-              onPressed: _isTimerRunning && !_isPaused
-                  ? _pauseTimer
-                  : _startTimer, // Show pause if the timer is running
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    Theme.of(context).primaryColor, // Match primary color
-                foregroundColor: Colors.white, // Text color
-                padding: EdgeInsets.symmetric(
-                    horizontal: 32, vertical: 16), // Padding
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12), // Rounded corners
-                ),
-              ),
+            Expanded(
               child: Padding(
-                padding: buttonPadding,
-                child: Text(_isPaused
-                    ? 'Resume'
-                    : (_isTimerRunning
-                        ? 'Pause'
-                        : 'Start Habit')), // Show appropriate button text
-              ),
-            ),
-            SizedBox(height: 8),
-            // Delete button
-            ElevatedButton(
-              onPressed:
-                  _showDeleteConfirmation, // Show confirmation dialog before deleting
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(
-                    71, 255, 0, 0), // Red color for delete button
-                foregroundColor: Colors.white, // Text color
-                padding: EdgeInsets.symmetric(
-                    horizontal: 32, vertical: 16), // Padding
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12), // Rounded corners
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.habit.name,
+                      style:
+                          TextStyle(fontSize: 50, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.start,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Goal: ${_formatTime(widget.habit.goal)}',
+                      style: TextStyle(fontSize: 25),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Progress: ${_formatTime(_completedTime)}',
+                      style: TextStyle(fontSize: 25),
+                    ),
+                    SizedBox(height: 4),
+                    if (widget.habit.isCompleted) ...[
+                      Text(
+                        'Status: Completed',
+                        style: TextStyle(fontSize: 20, color: Colors.green),
+                      ),
+                    ] else if (_isTimerRunning) ...[
+                      Text(
+                        'Status: In Progress',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ] else ...[
+                      Text(
+                        'Status: Not Started',
+                        style: TextStyle(fontSize: 20, color: Colors.red),
+                      ),
+                    ],
+                    SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: widget.habit.isCompleted
+                          ? 1.0
+                          : _completedTime / widget.habit.goal,
+                      minHeight: 4,
+                      backgroundColor: Colors.grey[300],
+                      color: const Color.fromARGB(72, 9, 255, 0),
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _isTimerRunning && !_isPaused
+                              ? _pauseTimer
+                              : _startTimer,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text(
+                            _isPaused
+                                ? 'Resume'
+                                : (_isTimerRunning ? 'Pause' : 'Start'),
+                            style: TextStyle(fontSize: 25),
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: _showDeleteConfirmation,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                const Color.fromARGB(255, 82, 82, 82),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text(
+                            'Delete',
+                            style: TextStyle(fontSize: 25),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
-              child: Padding(
-                padding: buttonPadding,
-                child: const Text('Delete Habit'),
               ),
             ),
           ],

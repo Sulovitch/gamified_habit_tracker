@@ -5,6 +5,7 @@ import '../widgets/habit_card.dart';
 import '../widgets/user_progress.dart';
 import '../widgets/animated_fab.dart';
 import 'add_habit_screen.dart';
+import 'analytics_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -16,12 +17,52 @@ class HomeScreen extends StatelessWidget {
         title: Text('Gamified Habit Tracker'),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0), // Add padding
+            child: IconButton(
+              icon: Icon(
+                Icons.analytics,
+                size: 30, // Increase icon size
+              ),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => AnalyticsScreen()),
+                );
+              },
+            ),
+          ),
+        ],
       ),
       body: Consumer<HabitProvider>(
         builder: (context, habitProvider, child) {
           return Column(
             children: [
               UserProgress(),
+              SizedBox(height: 16), // Space between UserProgress and buttons
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => AnalyticsScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.primaryColor,
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'View Analytics',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              SizedBox(height: 16), // Space between buttons
               Expanded(
                 child: habitProvider.habits.isEmpty
                     ? Center(
@@ -61,10 +102,12 @@ class HomeScreen extends StatelessWidget {
                       )
                     : GridView.builder(
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 0.75,
+                          crossAxisCount: 2, // Number of cards per row
+                          crossAxisSpacing:
+                              10, // Horizontal space between cards
+                          mainAxisSpacing: 10, // Vertical space between cards
+                          childAspectRatio:
+                              1.5, // Aspect ratio for fixed-size cards
                         ),
                         padding: const EdgeInsets.all(10),
                         itemCount: habitProvider.habits.length,

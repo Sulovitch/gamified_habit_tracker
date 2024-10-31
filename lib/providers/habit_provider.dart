@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/habit.dart';
 import 'dart:typed_data'; // Import for Uint8List
+import 'dart:async'; // Import for Timer
 
 class HabitProvider with ChangeNotifier {
   final List<Habit> _habits = []; // List of all habits
@@ -8,6 +9,9 @@ class HabitProvider with ChangeNotifier {
   Uint8List? _userAvatarBytes; // Store user avatar bytes for web
   String _userName = 'Guest'; // Default user name
   List<Habit> _filteredHabits = []; // List for filtered habits
+  Timer? _timer; // Timer for tracking habit progress
+  int _currentHabitIndex = -1; // Index of the currently active habit
+  int _timeSpent = 0; // Time spent on the current habit in seconds
 
   // Getter for all habits, filtered or not
   List<Habit> get habits => _filteredHabits.isEmpty ? _habits : _filteredHabits;
@@ -47,29 +51,129 @@ class HabitProvider with ChangeNotifier {
       throw ArgumentError(
           'Habit name cannot be empty'); // Ensure the habit name is valid
     }
+
     // Create and add the habit
     _habits
         .add(Habit(name: name, goal: goal, gifUrl: gifUrl, category: category));
     notifyListeners(); // Notify listeners about the addition
+    _logEvent('add_habit', {
+      'name': name,
+      'goal': goal,
+      'gifUrl': gifUrl,
+      'category': category,
+    });
+
+    // Update analytics
+    updateAnalytics();
   }
 
-  // Update an existing habit
-  void updateHabit(Habit oldHabit, Habit updatedHabit) {
-    final index = _habits.indexOf(oldHabit); // Find the index of the old habit
-    if (index != -1) {
-      _habits[index] = updatedHabit; // Update the habit at the found index
-      notifyListeners(); // Notify listeners about the update
-    } else {
-      throw Exception(
-          'Habit not found'); // Handle the case where the habit is not found
+  // Start tracking a habit
+  void startHabit(int index) {
+    if (_currentHabitIndex != -1) {
+      print('A habit is already in progress.'); // Optionally inform the user
+      return; // Exit if another habit is already being tracked
     }
+
+    _currentHabitIndex = index; // Store the index of the habit being tracked
+    _timeSpent = 0; // Reset time spent
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      _timeSpent++; // Increment the time spent every second
+    });
+    _logEvent('start_habit', {
+      'habitName': _habits[index].name,
+    });
+  }
+
+  // Finish tracking a habit and mark it as completed
+  void finishHabit() {
+    if (_currentHabitIndex == -1) {
+      print('No habit is currently being tracked.'); // Inform the user
+      return; // Exit if no habit is being tracked
+    }
+
+    Habit habit = _habits[_currentHabitIndex];
+    completeHabit(habit, _timeSpent); // Complete the habit with the time spent
+    _timer?.cancel(); // Stop the timer
+    _currentHabitIndex = -1; // Reset the current habit index
   }
 
   // Complete a habit and add points based on the time spent
-  void completeHabit(Habit habit, int minutes) {
-    habit.completeHabit(
-        minutes); // Update the habit's points based on minutes completed
-    notifyListeners(); // Notify listeners about the completion
+  void completeHabit(Habit habit, int completedTime) {
+    if (habit.isCompleted) {
+      print(
+          '${habit.name} is already completed.'); // Optionally inform the user
+      return; // Exit if the habit is already completed
+    }
+
+    // Update the habit's progress and points based on completed time
+    habit.completeHabit(completedTime);
+
+    // Notify listeners about the completion
+    notifyListeners();
+    _logEvent('complete_habit', {
+      'name': habit.name,
+      'minutes': completedTime,
+    });
+
+    // Update analytics
+    updateAnalytics();
+  }
+
+  // Uncomplete a habit
+  void uncompleteHabit(Habit habit) {
+    if (!habit.isCompleted) {
+      print(
+          '${habit.name} is not completed.'); // Inform if the habit is not completed
+      return; // Exit if the habit is not completed
+    }
+
+    // Update the habit's completion status
+    habit.uncompleteHabit(); // This method should reset the completion status
+
+    // Notify listeners about the uncompletion
+    notifyListeners();
+    _logEvent('uncomplete_habit', {
+      'name': habit.name,
+    });
+
+    // Update analytics
+    updateAnalytics();
+  }
+
+  // Remove a habit from the list
+  void removeHabit(Habit habit) {
+    _habits.remove(habit); // Remove the habit from the list
+    notifyListeners(); // Notify listeners about the removal
+    _logEvent('remove_habit', {
+      'name': habit.name,
+    });
+
+    // Update analytics
+    updateAnalytics();
+  }
+
+// Function to update analytics based on current habits
+  void updateAnalytics() {
+    int totalHabits = _habits.length;
+    int totalPoints = totalRewards;
+    int inProgressCount =
+        _currentHabitIndex != -1 ? 1 : 0; // Count in-progress habits
+
+    // Log current analytics state
+    _logEvent('update_analytics', {
+      'totalHabits': totalHabits,
+      'totalPoints': totalPoints,
+      'userLevel': userLevel,
+      'inProgressCount': inProgressCount, // Add in-progress count to analytics
+    });
+  }
+
+  // Function to log events to the console
+  void _logEvent(String eventName, Map<String, dynamic> parameters) {
+    if (kDebugMode) {
+      // Print logs only in debug mode
+      print('Event: $eventName, Parameters: $parameters');
+    }
   }
 
   // Calculate user level based on total points
@@ -97,11 +201,5 @@ class HabitProvider with ChangeNotifier {
       }).toList();
     }
     notifyListeners(); // Notify listeners to update the UI
-  }
-
-  // Remove a habit from the list
-  void removeHabit(Habit habit) {
-    _habits.remove(habit); // Remove the habit from the list
-    notifyListeners(); // Notify listeners about the removal
   }
 }
